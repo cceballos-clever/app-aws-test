@@ -1,0 +1,44 @@
+name: Deploy Infra to AWS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1  # o tu región
+
+      - name: Install Packer
+        uses: hashicorp/setup-packer@v2
+
+      - name: Build AMI with Packer
+        run: |
+          cd infra/packer
+          packer init ami.json
+          packer build ami.json
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init & Apply
+        run: |
+          cd infra/terraform
+          terraform init
+          terraform apply -auto-approve
+
+      - name: (Opcional) Run Ansible Playbook
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: infra/ansible/playbook.yml
