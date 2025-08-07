@@ -21,9 +21,8 @@ jobs:
         with:
           version: "1.10.0"
 
-      - name: Run Packer
+      - name: Run Packer #packer init packer/ami.json versiones anteriores a 1.7 de pakcer usan esto
         run: |
-          packer init packer/ami.json
           packer build packer/ami.json
 
       - name: Setup Terraform
