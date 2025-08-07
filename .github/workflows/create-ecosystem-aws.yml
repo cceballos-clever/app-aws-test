@@ -23,8 +23,8 @@ jobs:
 
       - name: Run Packer
         run: |
-          packer init packer/ami-builder.json
-          packer build packer/ami-builder.json
+          packer init packer/ami.json
+          packer build packer/ami.json
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
