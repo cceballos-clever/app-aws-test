@@ -1,0 +1,10 @@
+---
+- name: Configure instance
+  hosts: all
+  become: true
+  tasks:
+    - name: Instalar nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: true
