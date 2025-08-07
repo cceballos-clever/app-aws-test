@@ -1,44 +1,42 @@
-name: Deploy Infra to AWS
+name: Deploy Infra AWS
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup AWS credentials
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # o tu región
-
-      - name: Install Packer
+      - name: Setup Packer
         uses: hashicorp/setup-packer@v2
+        with:
+          version: "1.10.0"
 
-      - name: Build AMI with Packer
+      - name: Run Packer
         run: |
-          cd infra/packer
-          packer init ami.json
-          packer build ami.json
+          packer init packer/ami-builder.json
+          packer build packer/ami-builder.json
 
-      - name: Install Terraform
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.0
+          terraform_version: "1.8.0"
 
-      - name: Terraform Init & Apply
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: terraform
         run: |
-          cd infra/terraform
-          terraform init
-          terraform apply -auto-approve
-
-      - name: (Opcional) Run Ansible Playbook
-        uses: dawidd6/action-ansible-playbook@v2
-        with:
-          playbook: infra/ansible/playbook.yml
+          terraform apply -auto-approve \
+            -var="region=${{ secrets.AWS_REGION }}" \
+            -var="access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            -var="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            -var="ami_id=AMI_GENERADO_CON_PACKER"
