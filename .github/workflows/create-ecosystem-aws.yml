@@ -32,6 +32,12 @@ jobs:
         working-directory: terraform
         run: terraform init
 
+      - name: Get AMI ID
+        id: ami
+        run: |
+          AMI_ID=$(jq -r '.builds[0].artifact_id' manifest.json | cut -d':' -f2)
+          echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
+
       - name: Terraform Apply
         working-directory: terraform
         run: |
@@ -39,4 +45,4 @@ jobs:
             -var="region=${{ secrets.AWS_REGION }}" \
             -var="access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
             -var="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-            -var="ami_id=AMI_GENERADO_CON_PACKER"
+            -var="AMI_ID=AMI_GENERADO_CON_PACKER"
