@@ -13,6 +13,8 @@ jobs:
       AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+      SUBNET_IDS: ${{ secrets.SUBNET_IDS }}
+      VPC_ID: ${{ secrets.VPC_ID }}
       
     steps:
       - name: Checkout repo
@@ -50,5 +52,7 @@ jobs:
             -var="region=${{ secrets.AWS_REGION }}" \
             -var="db_password=${{ secrets.DB_PASSWORD }}" \
             -var="domain_name=${{ secrets.DOMAIN_NAME }}" \
-            -var="ami_id=${{ env.AMI_ID }}"
+            -var="ami_id=${{ env.AMI_ID }}" \
+            -var="subnet_id=${{ secrets.SUBNET_ID }}" \
+            -var="vpc_id=${{ secrets.VPC_ID }}"
 
