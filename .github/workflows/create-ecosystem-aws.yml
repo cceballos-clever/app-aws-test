@@ -31,20 +31,16 @@ jobs:
         with:
           version: "1.10.0"
 
-      - name: Run Packer #packer init packer/ami.json versiones anteriores a 1.7 de pakcer usan esto
-        run: |
-          packer build packer/ami.json
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.8.0"
-
       - name: Init Packer
         run: packer init packer/ami.pkr.hcl
 
       - name: Build AMI
         run: packer build packer/ami.pkr.hcl
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.8.0"      
 
       - name: Get AMI ID
         id: ami
