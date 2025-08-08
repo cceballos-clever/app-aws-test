@@ -25,4 +25,8 @@ source "amazon-ebs" "example" {
 
 build {
   sources = ["source.amazon-ebs.example"]
+
+  post-processor "manifest" {
+    output = "manifest.json"
+  }
 }
