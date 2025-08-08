@@ -66,7 +66,7 @@ resource "aws_lb_listener" "http_listener" {
 # Instancia EC2 con AMI creada
 resource "aws_instance" "app_server" {
   ami           = var.ami_id
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
   subnet_id     = var.subnet_ids[0]
   security_groups = [aws_security_group.alb_sg.id]
 
