@@ -1,6 +1,6 @@
 variable "region" {}
-variable "access_key" {}
-variable "secret_key" {}
+variable "aws_access_key_id" {}
+variable "aws_secret_access_key" {}
 variable "ami_id" {}
 variable "vpc_id" {}
 variable "subnet_ids" {
