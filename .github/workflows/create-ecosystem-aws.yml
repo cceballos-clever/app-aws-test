@@ -15,7 +15,7 @@ jobs:
       DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
       SUBNET_IDS: ${{ secrets.SUBNET_IDS }}
       VPC_ID: ${{ secrets.VPC_ID }}
-      PUBLIC_SUBNET_IDS: $[{{ secrets.PUBLIC_SUBNET_IDS }}
+      PUBLIC_SUBNET_IDS: ${{ secrets.PUBLIC_SUBNET_IDS }}
       PRIVATE_SUBNET_IDS: ${{ secrets.PRIVATE_SUBNET_IDS }}
       
     steps:
