@@ -18,7 +18,7 @@ source "amazon-ebs" "example" {
     owners      = ["099720109477"]
     most_recent = true
   }
-  instance_type   = "t2.micro"
+  instance_type   = "t3.micro"
   ssh_username    = "ubuntu"
   ami_name        = "packer-example-{{timestamp}}"
 }
