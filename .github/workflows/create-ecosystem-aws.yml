@@ -53,10 +53,8 @@ jobs:
             -var="region=${{ secrets.AWS_REGION }}" \
             -var="access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
             -var="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-            -var="region=${{ secrets.AWS_REGION }}" \
             -var="db_password=${{ secrets.DB_PASSWORD }}" \
             -var="domain_name=${{ secrets.DOMAIN_NAME }}" \
             -var="ami_id=${{ env.AMI_ID }}" \
-            -var="subnet_ids=${{ secrets.SUBNET_IDS }}" \
+            -var='subnet_ids=["subnet-0b3f6d0226fc3122a","subnet-05352e7349a18d8a2"]' \
             -var="vpc_id=${{ secrets.VPC_ID }}"
-
