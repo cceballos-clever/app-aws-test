@@ -1,3 +1,71 @@
+# main.tf
+
+# Internet Gateway para la VPC
+resource "aws_internet_gateway" "igw" {
+  vpc_id = var.vpc_id
+
+  tags = {
+    Name = "main-igw"
+  }
+}
+
+# Elastic IP para NAT Gateway
+resource "aws_eip" "nat_eip" {
+  vpc = true
+}
+
+# NAT Gateway en subnet pública
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat_eip.id
+  subnet_id     = var.public_subnet_ids[0]
+
+  tags = {
+    Name = "main-nat-gateway"
+  }
+}
+
+# Route Table pública
+resource "aws_route_table" "public_rt" {
+  vpc_id = var.vpc_id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+
+  tags = {
+    Name = "public-route-table"
+  }
+}
+
+# Asociar RT pública a subnets públicas
+resource "aws_route_table_association" "public_assoc" {
+  for_each       = toset(var.public_subnet_ids)
+  subnet_id      = each.value
+  route_table_id = aws_route_table.public_rt.id
+}
+
+# Route Table privada
+resource "aws_route_table" "private_rt" {
+  vpc_id = var.vpc_id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat.id
+  }
+
+  tags = {
+    Name = "private-route-table"
+  }
+}
+
+# Asociar RT privada a subnets privadas
+resource "aws_route_table_association" "private_assoc" {
+  for_each       = toset(var.private_subnet_ids)
+  subnet_id      = each.value
+  route_table_id = aws_route_table.private_rt.id
+}
+
 # Security Group para ALB y RDS
 resource "aws_security_group" "alb_sg" {
   name        = "alb-sg"
@@ -32,7 +100,7 @@ resource "aws_lb" "app_lb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = var.subnet_ids
+  subnets            = var.public_subnet_ids
 }
 
 # Target Group para ALB
@@ -41,6 +109,7 @@ resource "aws_lb_target_group" "app_tg" {
   port     = 80
   protocol = "HTTP"
   vpc_id   = var.vpc_id
+
   health_check {
     path                = "/"
     interval            = 30
@@ -63,11 +132,11 @@ resource "aws_lb_listener" "http_listener" {
   }
 }
 
-# Instancia EC2 con AMI creada
+# Instancia EC2 en subnet privada (usa NAT Gateway para salida)
 resource "aws_instance" "app_server" {
   ami           = var.ami_id
   instance_type = "t3.micro"
-  subnet_id     = var.subnet_ids[0]
+  subnet_id     = var.private_subnet_ids[0]
   security_groups = [aws_security_group.alb_sg.id]
 
   tags = {
@@ -78,7 +147,7 @@ resource "aws_instance" "app_server" {
 # RDS PostgreSQL
 resource "aws_db_subnet_group" "rds_subnet_group" {
   name       = "rds-subnet-group"
-  subnet_ids = var.subnet_ids
+  subnet_ids = var.private_subnet_ids
 }
 
 resource "aws_db_instance" "postgres" {
@@ -87,11 +156,11 @@ resource "aws_db_instance" "postgres" {
   engine_version         = "15.2"
   instance_class         = "db.t3.micro" # free tier
   name                   = "mydb"
-  username               = "postgres"
+  username               = var.db_username
   password               = var.db_password
   db_subnet_group_name   = aws_db_subnet_group.rds_subnet_group.name
   skip_final_snapshot    = true
-  publicly_accessible    = true
+  publicly_accessible    = false
   vpc_security_group_ids = [aws_security_group.alb_sg.id]
 }
 
@@ -113,15 +182,15 @@ resource "aws_route53_record" "alias" {
   }
 }
 
-# EFS (opcional)
+# EFS File System
 resource "aws_efs_file_system" "efs" {
   creation_token = "my-efs"
   encrypted      = true
 }
 
 resource "aws_efs_mount_target" "efs_mount" {
-  for_each       = toset(var.subnet_ids)
-  file_system_id = aws_efs_file_system.efs.id
-  subnet_id      = each.value
+  for_each        = toset(var.private_subnet_ids)
+  file_system_id  = aws_efs_file_system.efs.id
+  subnet_id       = each.value
   security_groups = [aws_security_group.alb_sg.id]
 }
