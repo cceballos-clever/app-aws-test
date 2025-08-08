@@ -16,16 +16,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install Packer amazon-ebs plugin
-        run: |
-          PLUGIN_PATH="${HOME}/.config/packer/plugins/github.com/hashicorp/amazon-ebs/packer-plugin-amazon-ebs/1.0.12/"
-          mkdir -p "$PLUGIN_PATH"
-          curl -L https://releases.hashicorp.com/packer-plugin-amazon-ebs/1.0.12/packer-plugin-amazon-ebs_1.0.12_linux_amd64.zip -o plugin.zip
-          unzip plugin.zip -d "$PLUGIN_PATH"
-          chmod +x "$PLUGIN_PATH/packer-plugin-amazon-ebs"
-          rm plugin.zip
-
-
       - name: Setup Packer
         uses: hashicorp/setup-packer@v2
         with:
@@ -55,4 +45,5 @@ jobs:
             -var="region=${{ secrets.AWS_REGION }}" \
             -var="access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
             -var="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-            -var="AMI_ID=AMI_GENERADO_CON_PACKER"
+            -var="ami_id=${{ env.AMI_ID }}"
+
