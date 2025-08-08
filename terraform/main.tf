@@ -158,7 +158,7 @@ resource "aws_db_instance" "postgres" {
   engine                 = "postgres"
   engine_version         = "15.2"
   instance_class         = "db.t3.micro" # free tier
-  name                   = "mydb"
+  db_name                   = "mydb"
   username               = var.db_username
   password               = var.db_password
   db_subnet_group_name   = aws_db_subnet_group.rds_subnet_group.name
