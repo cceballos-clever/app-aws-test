@@ -42,6 +42,10 @@ jobs:
           AMI_ID=$(jq -r '.builds[0].artifact_id' manifest.json | cut -d':' -f2)
           echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
 
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+             
       - name: Terraform Apply
         working-directory: terraform
         run: |
