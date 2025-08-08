@@ -10,8 +10,7 @@ resource "aws_internet_gateway" "igw" {
 }
 
 # Elastic IP para NAT Gateway
-resource "aws_eip" "nat_eip" {
-  vpc = true
+resource "aws_eip" "nat_eip"
 }
 
 # NAT Gateway en subnet pública
