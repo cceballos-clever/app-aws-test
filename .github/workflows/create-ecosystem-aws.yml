@@ -64,7 +64,7 @@ jobs:
             -var="db_password=${{ secrets.DB_PASSWORD }}" \
             -var="db_username=${{ secrets.DB_USERNAME }}" \
             -var="domain_name=${{ secrets.DOMAIN_NAME }}" \
-            -var="public_subnet_id=subnet-05352e7349a18d8a2" \
-            -var="private_subnet_id=subnet-0b3f6d0226fc3122a" \
+            -var="public_subnet_ids=[\"subnet-05352e7349a18d8a2\", \"subnet-03a1d7d3abfe78e7c\"]" \
+            -var="private_subnet_ids=[\"subnet-0b3f6d0226fc3122a\", \"subnet-04222f67660946305\"]" \
             -var="ami_id=${{ env.AMI_ID }}" \
             -var="vpc_id=${{ secrets.VPC_ID }}"
