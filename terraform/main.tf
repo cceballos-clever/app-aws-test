@@ -20,7 +20,7 @@ resource "aws_eip" "nat_eip" {
 # NAT Gateway en subnet pública
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat_eip.id
-  subnet_id     = var.public_subnet_ids[0]
+  subnet_id     = var.public_subnet_id[0]
 
   tags = {
     Name = "main-nat-gateway"
@@ -43,7 +43,7 @@ resource "aws_route_table" "public_rt" {
 
 # Asociar RT pública a subnets públicas
 resource "aws_route_table_association" "public_assoc" {
-  for_each       = toset(var.public_subnet_ids)
+  for_each       = toset(var.public_subnet_id)
   subnet_id      = each.value
   route_table_id = aws_route_table.public_rt.id
 }
@@ -64,7 +64,7 @@ resource "aws_route_table" "private_rt" {
 
 # Asociar RT privada a subnets privadas
 resource "aws_route_table_association" "private_assoc" {
-  for_each       = toset(var.private_subnet_ids)
+  for_each       = toset(var.private_subnet_id)
   subnet_id      = each.value
   route_table_id = aws_route_table.private_rt.id
 }
@@ -103,7 +103,7 @@ resource "aws_lb" "app_lb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = var.public_subnet_ids
+  subnets            = var.public_subnet_id
 }
 
 # Target Group para ALB
@@ -139,7 +139,7 @@ resource "aws_lb_listener" "http_listener" {
 resource "aws_instance" "app_server" {
   ami           = var.ami_id
   instance_type = "t3.micro"
-  subnet_id     = var.private_subnet_ids[0]
+  subnet_id     = var.private_subnet_id[0]
   security_groups = [aws_security_group.alb_sg.id]
 
   tags = {
@@ -150,7 +150,7 @@ resource "aws_instance" "app_server" {
 # RDS PostgreSQL
 resource "aws_db_subnet_group" "rds_subnet_group" {
   name       = "rds-subnet-group"
-  subnet_ids = var.private_subnet_ids
+  subnet_ids = var.private_subnet_id
 }
 
 resource "aws_db_instance" "postgres" {
@@ -192,7 +192,7 @@ resource "aws_efs_file_system" "efs" {
 }
 
 resource "aws_efs_mount_target" "efs_mount" {
-  for_each        = toset(var.private_subnet_ids)
+  for_each        = toset(var.private_subnet_id)
   file_system_id  = aws_efs_file_system.efs.id
   subnet_id       = each.value
   security_groups = [aws_security_group.alb_sg.id]
