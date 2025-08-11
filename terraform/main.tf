@@ -20,7 +20,7 @@ resource "aws_eip" "nat_eip" {
 # NAT Gateway en subnet pública
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat_eip.id
-  subnet_id     = var.public_subnet_id[0]
+  subnet_id     = var.public_subnet_id
 
   tags = {
     Name = "main-nat-gateway"
@@ -101,7 +101,7 @@ resource "aws_lb" "app_lb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = var.public_subnet_id
+  subnet            = var.public_subnet_id
 }
 
 # Target Group para ALB
@@ -137,7 +137,7 @@ resource "aws_lb_listener" "http_listener" {
 resource "aws_instance" "app_server" {
   ami           = var.ami_id
   instance_type = "t3.micro"
-  subnet_id     = var.private_subnet_id[0]
+  subnet_id     = var.private_subnet_id
   security_groups = [aws_security_group.alb_sg.id]
 
   tags = {
