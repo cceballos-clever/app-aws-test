@@ -64,7 +64,7 @@ resource "aws_route_table" "private_rt" {
 
 # Asociar RT privada a subnets privadas
 resource "aws_route_table_association" "private_assoc" {
-  subnet_id      = var.private_subnet_id
+  subnet_id      = var.private_subnet_ids
   route_table_id = aws_route_table.private_rt.id
 }
 
@@ -192,6 +192,6 @@ resource "aws_efs_file_system" "efs" {
 
 resource "aws_efs_mount_target" "efs_mount" {
   file_system_id  = aws_efs_file_system.efs.id
-  subnet_id       = var.private_subnet_id[0]
+  subnet_id       = var.private_subnet_ids
   security_groups = [aws_security_group.alb_sg.id]
 }
