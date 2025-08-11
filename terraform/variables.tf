@@ -20,11 +20,6 @@ variable "ami_id" {
   type        = string
 }
 
-variable "vpc_id" {
-  description = "ID de la VPC"
-  type        = string
-}
-
 variable "db_username" {
   description = "Usuario para la base de datos"
   type        = string
@@ -39,9 +34,4 @@ variable "db_password" {
 variable "domain_name" {
   description = "Nombre de dominio para Route53"
   type        = string
-}
-
-variable "public_subnet_ids" {
-  description = "Lista de subnets públicas"
-  type        = list(string)
 }
