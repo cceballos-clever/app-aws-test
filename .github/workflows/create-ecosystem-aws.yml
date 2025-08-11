@@ -28,8 +28,12 @@ jobs:
         with:
           version: "1.10.0"
 
-      - name: Init Packer
-        run: packer init packer/ami.pkr.hcl
+      - name: Packer Init
+        working-directory: packer
+        run: |
+          export PACKER_GITHUB_API_TOKEN=${{ secrets.PACKER_GITHUB_API_TOKEN }}
+          packer init ami.pkr.hcl
+
 
       - name: Build AMI
         run: packer build packer/ami.pkr.hcl
