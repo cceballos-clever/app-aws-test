@@ -15,8 +15,8 @@ jobs:
       DB_USERNAME: ${{ secrets.DB_USERNAME }}
       DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
       VPC_ID: ${{ secrets.VPC_ID }}
-      PUBLIC_SUBNET_IDS: ${{ secrets.PUBLIC_SUBNET_IDS }}
-      PRIVATE_SUBNET_IDS: ${{ secrets.PRIVATE_SUBNET_IDS }}
+      #PUBLIC_SUBNET_IDS: ${{ secrets.PUBLIC_SUBNET_IDS }}
+      #PRIVATE_SUBNET_IDS: ${{ secrets.PRIVATE_SUBNET_IDS }}
       
     steps:
       - name: Checkout repo
