@@ -1,29 +1,9 @@
-# main.tf
-
 # Internet Gateway para la VPC
 resource "aws_internet_gateway" "igw" {
   vpc_id = var.vpc_id
 
   tags = {
     Name = "main-igw"
-  }
-}
-
-# Elastic IP para NAT Gateway
-resource "aws_eip" "nat_eip" {
-
-  tags = {
-    Name = "main-nat-eip"
-  }
-}
-
-# NAT Gateway en subnet pública
-resource "aws_nat_gateway" "nat" {
-  allocation_id = aws_eip.nat_eip.id
-  subnet_id     = var.public_subnet_ids[0]
-
-  tags = {
-    Name = "main-nat-gateway"
   }
 }
 
@@ -41,31 +21,11 @@ resource "aws_route_table" "public_rt" {
   }
 }
 
-# Asociar RT pública a subnets públicas
+# Asociar RT pública a subnets públicas (primeras 2)
 resource "aws_route_table_association" "public_assoc" {
-  for_each      = toset(var.public_subnet_ids)
+  for_each      = toset(slice(var.public_subnet_ids, 0, 2))
   subnet_id      = each.value
   route_table_id = aws_route_table.public_rt.id
-}
-
-# Route Table privada
-resource "aws_route_table" "private_rt" {
-  vpc_id = var.vpc_id
-
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat.id
-  }
-
-  tags = {
-    Name = "private-route-table"
-  }
-}
-
-# Asociar RT privada a subnets privadas
-resource "aws_route_table_association" "private_assoc" {
-  subnet_id      = var.private_subnet_ids
-  route_table_id = aws_route_table.private_rt.id
 }
 
 # Security Group para ALB y RDS
@@ -102,7 +62,7 @@ resource "aws_lb" "app_lb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = var.public_subnet_ids
+  subnets            = slice(var.public_subnet_ids, 0, 2)
 }
 
 # Target Group para ALB
@@ -134,11 +94,11 @@ resource "aws_lb_listener" "http_listener" {
   }
 }
 
-# Instancia EC2 en subnet privada (usa NAT Gateway para salida)
+# Instancia EC2 en subnet pública (ya que no hay privada)
 resource "aws_instance" "app_server" {
   ami           = var.ami_id
   instance_type = "t3.micro"
-  subnet_id     = var.private_subnet_ids[0]
+  subnet_id     = var.public_subnet_ids[0]  # Cambiado a subnet pública
   security_groups = [aws_security_group.alb_sg.id]
 
   tags = {
@@ -146,10 +106,10 @@ resource "aws_instance" "app_server" {
   }
 }
 
-# RDS PostgreSQL
+# RDS PostgreSQL en subnets privadas si tienes, sino públicas (ajustar según tu arquitectura)
 resource "aws_db_subnet_group" "rds_subnet_group" {
   name       = "rds-subnet-group"
-  subnet_ids = var.private_subnet_ids
+  subnet_ids = var.private_subnet_ids # o public_subnet_ids si no tienes privadas
 }
 
 resource "aws_db_instance" "postgres" {
@@ -157,7 +117,7 @@ resource "aws_db_instance" "postgres" {
   engine                 = "postgres"
   engine_version         = "15.2"
   instance_class         = "db.t3.micro" # free tier
-  db_name                   = "mydb"
+  db_name                = "mydb"
   username               = var.db_username
   password               = var.db_password
   db_subnet_group_name   = aws_db_subnet_group.rds_subnet_group.name
@@ -190,8 +150,10 @@ resource "aws_efs_file_system" "efs" {
   encrypted      = true
 }
 
+# Crear un mount target de EFS para cada subnet pública (ejemplo para 2 subnets)
 resource "aws_efs_mount_target" "efs_mount" {
-  file_system_id  = aws_efs_file_system.efs.id
-  subnet_id       = var.private_subnet_ids
+  for_each       = toset(slice(var.public_subnet_ids, 0, 2))
+  file_system_id = aws_efs_file_system.efs.id
+  subnet_id      = each.value
   security_groups = [aws_security_group.alb_sg.id]
 }
