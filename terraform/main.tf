@@ -43,8 +43,7 @@ resource "aws_route_table" "public_rt" {
 
 # Asociar RT pública a subnets públicas
 resource "aws_route_table_association" "public_assoc" {
-  for_each       = toset(var.public_subnet_id)
-  subnet_id      = each.value
+  subnet_id      = var.public_subnet_id
   route_table_id = aws_route_table.public_rt.id
 }
 
@@ -64,8 +63,7 @@ resource "aws_route_table" "private_rt" {
 
 # Asociar RT privada a subnets privadas
 resource "aws_route_table_association" "private_assoc" {
-  for_each       = toset(var.private_subnet_id)
-  subnet_id      = each.value
+  subnet_id      = var.private_subnet_id
   route_table_id = aws_route_table.private_rt.id
 }
 
@@ -192,8 +190,7 @@ resource "aws_efs_file_system" "efs" {
 }
 
 resource "aws_efs_mount_target" "efs_mount" {
-  for_each        = toset(var.private_subnet_id)
   file_system_id  = aws_efs_file_system.efs.id
-  subnet_id       = each.value
+  subnet_id       = var.private_subnet_id
   security_groups = [aws_security_group.alb_sg.id]
 }
