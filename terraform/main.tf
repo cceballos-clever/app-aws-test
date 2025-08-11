@@ -47,7 +47,10 @@ resource "aws_route_table" "public_rt" {
 }
 
 resource "aws_route_table_association" "public_assoc" {
-  for_each      = toset([aws_subnet.public_1.id, aws_subnet.public_2.id])
+  for_each      = {
+    subnet1 = aws_subnet.public_1.id
+    subnet2 = aws_subnet.public_2.id
+  }
   subnet_id      = each.value
   route_table_id = aws_route_table.public_rt.id
 }
@@ -182,9 +185,12 @@ resource "aws_efs_file_system" "efs" {
 }
 
 resource "aws_efs_mount_target" "efs_mount" {
-  for_each       = toset([aws_subnet.public_1.id, aws_subnet.public_2.id])
-  file_system_id = aws_efs_file_system.efs.id
-  subnet_id      = each.value
+  for_each       = {
+    subnet1 = aws_subnet.public_1.id
+    subnet2 = aws_subnet.public_2.id
+  }
+  file_system_id  = aws_efs_file_system.efs.id
+  subnet_id       = each.value
   security_groups = [aws_security_group.alb_sg.id]
 }
 
