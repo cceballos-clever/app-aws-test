@@ -20,7 +20,7 @@ resource "aws_eip" "nat_eip" {
 # NAT Gateway en subnet pública
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat_eip.id
-  subnet_id     = var.public_subnet_id[0]
+  subnet_id     = var.public_subnet_ids[0]
 
   tags = {
     Name = "main-nat-gateway"
@@ -43,7 +43,8 @@ resource "aws_route_table" "public_rt" {
 
 # Asociar RT pública a subnets públicas
 resource "aws_route_table_association" "public_assoc" {
-  subnet_id      = var.public_subnet_id
+  for_each      = toset(var.public_subnet_ids)
+  subnet_id      = each.value
   route_table_id = aws_route_table.public_rt.id
 }
 
@@ -137,7 +138,7 @@ resource "aws_lb_listener" "http_listener" {
 resource "aws_instance" "app_server" {
   ami           = var.ami_id
   instance_type = "t3.micro"
-  subnet_id     = var.private_subnet_id[0]
+  subnet_id     = var.private_subnet_ids[0]
   security_groups = [aws_security_group.alb_sg.id]
 
   tags = {
@@ -191,6 +192,6 @@ resource "aws_efs_file_system" "efs" {
 
 resource "aws_efs_mount_target" "efs_mount" {
   file_system_id  = aws_efs_file_system.efs.id
-  subnet_id       = var.private_subnet_id
+  subnet_id       = var.private_subnet_id[0]
   security_groups = [aws_security_group.alb_sg.id]
 }
