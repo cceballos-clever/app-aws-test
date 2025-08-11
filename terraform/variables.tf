@@ -1,20 +1,47 @@
-variable "region" {}
-variable "access_key" {}
-variable "secret_key" {}
-variable "ami_id" {}
-variable "vpc_id" {}
-variable "db_username" {}
-variable "db_password" {
-  sensitive = true
+variable "region" {
+  description = "AWS region"
+  type        = string
 }
-variable "domain_name" {}
+
+variable "access_key" {
+  description = "AWS Access Key"
+  type        = string
+  sensitive   = true
+}
+
+variable "secret_key" {
+  description = "AWS Secret Key"
+  type        = string
+  sensitive   = true
+}
+
+variable "ami_id" {
+  description = "AMI ID para la instancia EC2"
+  type        = string
+}
+
+variable "vpc_id" {
+  description = "ID de la VPC"
+  type        = string
+}
+
+variable "db_username" {
+  description = "Usuario para la base de datos"
+  type        = string
+}
+
+variable "db_password" {
+  description = "Contraseña para la base de datos"
+  type        = string
+  sensitive   = true
+}
+
+variable "domain_name" {
+  description = "Nombre de dominio para Route53"
+  type        = string
+}
 
 variable "public_subnet_ids" {
-  description = "List of public subnet IDs"
-  type        = list(string)
-}
-
-variable "private_subnet_ids" {
-  description = "List of private subnet IDs"
+  description = "Lista de subnets públicas"
   type        = list(string)
 }
