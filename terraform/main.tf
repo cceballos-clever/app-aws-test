@@ -109,7 +109,7 @@ resource "aws_instance" "app_server" {
 # RDS PostgreSQL en subnets privadas si tienes, sino públicas (ajustar según tu arquitectura)
 resource "aws_db_subnet_group" "rds_subnet_group" {
   name       = "rds-subnet-group"
-  subnet_ids = var.private_subnet_ids # o public_subnet_ids si no tienes privadas
+  subnet_ids = public_subnet_ids 
 }
 
 resource "aws_db_instance" "postgres" {
