@@ -20,7 +20,7 @@ source "amazon-ebs" "example" {
   }
   instance_type   = "t3.micro"
   ssh_username    = "ubuntu"
-  ami_name        = "packer-example-{{timestamp}}"
+  ami_name        = "packer-test-aws-{{timestamp}}"
 }
 
 build {
