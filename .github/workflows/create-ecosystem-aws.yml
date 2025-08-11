@@ -59,7 +59,7 @@ jobs:
           TF_LOG: DEBUG
         run: |
           terraform apply -auto-approve \
-            -var="region=${{ secrets.AWS_REGION }}" \
+            -var="aws_defaulr_region=${{ secrets.AWS_DEFAULT_REGION }}" \
             -var="access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
             -var="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
             -var="db_password=${{ secrets.DB_PASSWORD }}" \
