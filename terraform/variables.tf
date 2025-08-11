@@ -9,12 +9,12 @@ variable "db_password" {
 }
 variable "domain_name" {}
 
-variable "public_subnet_ids" {
+variable "public_subnet_id" {
   description = "List of public subnet IDs"
   type        = string
 }
 
-variable "private_subnet_ids" {
+variable "private_subnet_id" {
   description = "List of private subnet IDs"
   type        = string
 }
