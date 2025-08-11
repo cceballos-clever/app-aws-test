@@ -52,7 +52,8 @@ jobs:
         working-directory: terraform
         run: terraform init
              
-      - name: Terraform Apply
+      - name: Terraform Apply  #-var="private_subnet_ids=[\"subnet-0b3f6d0226fc3122a\", \"subnet-04222f67660946305\"]" \
+
         working-directory: terraform
         env:
           TF_LOG: DEBUG
@@ -65,6 +66,29 @@ jobs:
             -var="db_username=${{ secrets.DB_USERNAME }}" \
             -var="domain_name=${{ secrets.DOMAIN_NAME }}" \
             -var="public_subnet_ids=[\"subnet-05352e7349a18d8a2\", \"subnet-03a1d7d3abfe78e7c\"]" \
-            -var="private_subnet_ids=[\"subnet-0b3f6d0226fc3122a\", \"subnet-04222f67660946305\"]" \
             -var="ami_id=${{ env.AMI_ID }}" \
             -var="vpc_id=${{ secrets.VPC_ID }}"
+
+      - name: Get EC2 public IP
+        id: get_ip
+        working-directory: terraform
+        run: |
+          terraform output -raw app_server_public_ip > public_ip.txt
+          echo "EC2_PUBLIC_IP=$(cat public_ip.txt)" >> $GITHUB_ENV
+
+
+      - name: Setup Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible sshpass
+
+      - name: Write SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/my-key.pem
+          chmod 400 ~/.ssh/my-key.pem
+
+      - name: Run Ansible playbook
+        run: |
+          ansible-playbook -i inventory.ini playbook.yml --private-key ~/.ssh/my-key.pem --user ubuntu
+
+
