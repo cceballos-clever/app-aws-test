@@ -109,7 +109,7 @@ resource "aws_instance" "app_server" {
 # RDS PostgreSQL en subnets privadas si tienes, sino públicas (ajustar según tu arquitectura)
 resource "aws_db_subnet_group" "rds_subnet_group" {
   name       = "rds-subnet-group"
-  subnet_ids = public_subnet_ids 
+  subnet_ids = var.public_subnet_ids 
 }
 
 resource "aws_db_instance" "postgres" {
@@ -117,7 +117,7 @@ resource "aws_db_instance" "postgres" {
   engine                 = "postgres"
   engine_version         = "15.2"
   instance_class         = "db.t3.micro" # free tier
-  db_name                = "mydb"
+  db_name                = "db-test-aws"
   username               = var.db_username
   password               = var.db_password
   db_subnet_group_name   = aws_db_subnet_group.rds_subnet_group.name
