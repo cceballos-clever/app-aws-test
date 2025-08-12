@@ -51,6 +51,7 @@ jobs:
         run: terraform init
              
       - name: Terraform Apply  #-var="private_subnet_ids=[\"subnet-0b3f6d0226fc3122a\", \"subnet-04222f67660946305\"]" \
+        continue-on-error: true
         working-directory: terraform
         env:
           TF_LOG: DEBUG
