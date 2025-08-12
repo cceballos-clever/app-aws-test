@@ -19,7 +19,7 @@ source "amazon-ebs" "example" {
     most_recent = true
   }
   instance_type   = "t3.micro"
-  subnet_id       = "vpc-0ad410d5d4e52c552"
+  subnet_id       = "subnet-04c64c69b982c9bb3"
   ssh_username    = "ubuntu"
   ami_name        = "packer-test-aws-{{timestamp}}"
 }
