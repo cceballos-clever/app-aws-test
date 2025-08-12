@@ -16,5 +16,8 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
+      - name: Terraform apply
+        run: terraform apply -auto-approve
+
       - name: Terraform State List
         run: terraform state list
