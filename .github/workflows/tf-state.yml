@@ -6,6 +6,11 @@ jobs:
   tfstate:
     runs-on: ubuntu-latest
 
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -17,9 +22,15 @@ jobs:
         run: terraform init
         working-directory: ./terraform
 
-      - name: Terraform apply
-        run: terraform apply -auto-approve
-        working-directory: ./terraform
+      - name: Terraform Apply  #-var="private_subnet_ids=[\"subnet-0b3f6d0226fc3122a\", \"subnet-04222f67660946305\"]" \
+        working-directory: terraform
+        env:
+          TF_LOG: DEBUG
+        run: |
+          terraform apply -auto-approve \
+            -var="region=${{ secrets.AWS_DEFAULT_REGION }}" \
+            -var="access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            -var="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
 
       - name: Terraform State List
         run: terraform state list
