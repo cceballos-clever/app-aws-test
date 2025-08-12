@@ -153,7 +153,7 @@ resource "aws_db_instance" "postgres" {
   engine                 = "postgres"
   engine_version         = "16.9"
   instance_class         = "db.t3.micro"
-  db_name                = "db-test-aws"
+  db_name                = "dbtestaws"
   username               = var.db_username
   password               = var.db_password
   db_subnet_group_name   = aws_db_subnet_group.rds_subnet_group.name
