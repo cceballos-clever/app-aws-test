@@ -14,9 +14,7 @@ jobs:
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       DB_USERNAME: ${{ secrets.DB_USERNAME }}
       DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
-      #VPC_ID: ${{ secrets.VPC_ID }}
-      #PUBLIC_SUBNET_IDS: ${{ secrets.PUBLIC_SUBNET_IDS }}
-      #PRIVATE_SUBNET_IDS: ${{ secrets.PRIVATE_SUBNET_IDS }}
+
       
     steps:
       - name: Checkout repo
@@ -79,13 +77,29 @@ jobs:
           sudo apt update
           sudo apt install -y ansible sshpass
 
+      - name: Create SSH folder
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
       - name: Write SSH key
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/my-key.pem
           chmod 400 ~/.ssh/my-key.pem
 
+      - name: Create Ansible inventory
+        run: |
+          echo "[ec2]" > inventory.ini
+          echo "$EC2_PUBLIC_IP ansible_ssh_private_key_file=~/.ssh/my-key.pem ansible_user=${{ secrets.EC2_SSH_USER }}" >> inventory.ini
+          cat inventory.ini
+
+      - name: Install Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible
+
       - name: Run Ansible playbook
         run: |
-          ansible-playbook -i inventory.ini playbook.yml --private-key ~/.ssh/my-key.pem --user ubuntu
+          ansible-playbook -i inventory.ini playbook.yml
 
 
