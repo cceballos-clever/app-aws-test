@@ -1,9 +1,8 @@
-name: ver estado de terraform
-on:
+name: ver ruta de archivos
   workflow_dispatch:
 
 jobs:
-  tfstate:
+  debug-rutas:
     runs-on: ubuntu-latest
 
     env:
