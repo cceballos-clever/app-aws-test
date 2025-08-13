@@ -9,12 +9,38 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+      EC2_PUBLIC_IP: "3.92.208.127" # La IP pública de tu instancia
+      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Setup Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible sshpass
+
+      - name: Create SSH folder
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+      - name: Write SSH key
+        run: |
+          echo "${{ env.EC2_SSH_KEY }}" > ~/.ssh/my-key.pem
+          chmod 400 ~/.ssh/my-key.pem
+
+      - name: Create Ansible inventory
+        run: |
+          echo "[ec2]" > inventory.ini
+          echo "${{ env.EC2_PUBLIC_IP }} ansible_ssh_private_key_file=~/.ssh/my-key.pem ansible_user=ubuntu" >> inventory.ini
+          cat inventory.ini
+
+      - name: Test Ansible connectivity
+        run: ansible -i inventory.ini -m ping all
 
       - name: List files for debugging
         run: |
