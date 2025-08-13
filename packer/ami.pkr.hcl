@@ -22,6 +22,11 @@ source "amazon-ebs" "example" {
   subnet_id       = "subnet-04c64c69b982c9bb3"
   ssh_username    = "ubuntu"
   ami_name        = "packer-test-aws-{{timestamp}}"
+
+  # Configuraciones añadidas
+  associate_public_ip_address = true
+  ssh_interface               = "public_ip"
+  ssh_timeout                 = "10m"
 }
 
 build {
