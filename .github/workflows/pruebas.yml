@@ -1,10 +1,9 @@
-name: ver ruta de archivos
-
+name: pruebas
 on:
   workflow_dispatch:
 
 jobs:
-  debug-rutas:
+  debug:
     runs-on: ubuntu-latest
 
     env:
@@ -34,6 +33,10 @@ jobs:
         run: |
           echo "${{ env.EC2_SSH_KEY }}" > ~/.ssh/my-key.pem
           chmod 400 ~/.ssh/my-key.pem
+
+      - name: Add EC2 to known hosts
+        run: |
+          ssh-keyscan -H ${{ env.EC2_PUBLIC_IP }} >> ~/.ssh/known_hosts
 
       - name: Create Ansible inventory
         run: |
