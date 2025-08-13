@@ -16,6 +16,11 @@ jobs:
       DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
       EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
       EC2_KEY_NAME: ${{ secrets.EC2_KEY_NAME }}
+      # Variables TF_VAR_ para que Terraform las tome automáticamente
+      TF_VAR_region: ${{ secrets.AWS_REGION }}
+      TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+      TF_VAR_db_username: ${{ secrets.DB_USERNAME }}
+      TF_VAR_domain_name: ${{ secrets.DOMAIN_NAME }}
       TF_VAR_key_name: ${{ secrets.EC2_KEY_NAME }}
 
     steps:
@@ -46,6 +51,7 @@ jobs:
         run: |
           AMI_ID=$(jq -r '.builds[0].artifact_id' manifest.json | cut -d':' -f2)
           echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
+          echo "TF_VAR_ami_id=$AMI_ID" >> $GITHUB_ENV
 
       - name: Terraform Init
         working-directory: terraform
@@ -57,16 +63,7 @@ jobs:
         working-directory: terraform
         env:
           TF_LOG: DEBUG
-        run: |
-          terraform apply -auto-approve \
-            -var="region=${{ secrets.AWS_DEFAULT_REGION }}" \
-            -var="access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
-            -var="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-            -var="db_password=${{ secrets.DB_PASSWORD }}" \
-            -var="db_username=${{ secrets.DB_USERNAME }}" \
-            -var="domain_name=${{ secrets.DOMAIN_NAME }}" \
-            -var="ami_id=${{ env.AMI_ID }}" \
-            -var="key_name=${{ secrets.EC2_KEY_NAME }}"
+        run: terraform apply -auto-approve
 
       - name: Get EC2 public IP
         id: get_ip
@@ -97,8 +94,7 @@ jobs:
           cat inventory.ini
 
       - name: Run Ansible playbook
-        run: |
-          ansible-playbook -i inventory.ini playbook.yml
+        run: ansible-playbook -i inventory.ini playbook.yml
 
       - name: Cleanup on failure
         if: failure()
