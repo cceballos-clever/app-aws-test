@@ -32,7 +32,7 @@ variable "db_password" {
   sensitive   = true
 }
 
-variable "key-name" {
+variable "key_name" {
   description = "Nombre del key pair para EC2"
   type        = string
 }
