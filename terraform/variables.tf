@@ -32,6 +32,11 @@ variable "db_password" {
   sensitive   = true
 }
 
+variable "key_name" {
+  description = "Nombre del key pair para EC2"
+  type        = string
+}
+
 variable "domain_name" {
   description = "Nombre de dominio para Route53"
   type        = string
