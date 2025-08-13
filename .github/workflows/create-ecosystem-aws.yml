@@ -107,6 +107,11 @@ jobs:
       - name: Run Ansible playbook
         run: ansible-playbook -i inventory.ini playbook.yml
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.8.0"
+
       - name: Cleanup on failure
         if: failure()
         working-directory: terraform
