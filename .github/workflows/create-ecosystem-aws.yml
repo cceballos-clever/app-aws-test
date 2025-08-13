@@ -14,8 +14,9 @@ jobs:
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       DB_USERNAME: ${{ secrets.DB_USERNAME }}
       DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+      EC2_KEY_NAME: ${{ secrets.EC2_KEY_NAME }}
 
-      
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -30,7 +31,6 @@ jobs:
         run: |
           export PACKER_GITHUB_API_TOKEN=${{ secrets.PACKER_GITHUB_API_TOKEN }}
           packer init ami.pkr.hcl
-
 
       - name: Build AMI
         run: packer build packer/ami.pkr.hcl
@@ -50,8 +50,9 @@ jobs:
         working-directory: terraform
         run: terraform init
              
-      - name: Terraform Apply  #-var="private_subnet_ids=[\"subnet-0b3f6d0226fc3122a\", \"subnet-04222f67660946305\"]" \
-        continue-on-error: true
+      - name: Terraform Apply
+        id: terraform_apply
+        continue-on-error: false
         working-directory: terraform
         env:
           TF_LOG: DEBUG
@@ -63,7 +64,8 @@ jobs:
             -var="db_password=${{ secrets.DB_PASSWORD }}" \
             -var="db_username=${{ secrets.DB_USERNAME }}" \
             -var="domain_name=${{ secrets.DOMAIN_NAME }}" \
-            -var="ami_id=${{ env.AMI_ID }}"
+            -var="ami_id=${{ env.AMI_ID }}" \
+            -var="key_name=${{ secrets.EC2_KEY_NAME }}"
 
       - name: Get EC2 public IP
         id: get_ip
@@ -71,8 +73,7 @@ jobs:
         run: |
           terraform output -raw app_server_public_ip > public_ip.txt
           echo "EC2_PUBLIC_IP=$(cat public_ip.txt)" >> $GITHUB_ENV
-
-
+          
       - name: Setup Ansible
         run: |
           sudo apt update
@@ -91,16 +92,16 @@ jobs:
       - name: Create Ansible inventory
         run: |
           echo "[ec2]" > inventory.ini
-          echo "$EC2_PUBLIC_IP ansible_ssh_private_key_file=~/.ssh/my-key.pem ansible_user=${{ secrets.EC2_SSH_USER }}" >> inventory.ini
+          echo "${{ env.EC2_PUBLIC_IP }} ansible_ssh_private_key_file=~/.ssh/my-key.pem ansible_user=${{ secrets.EC2_SSH_USER }}" >> inventory.ini
           cat inventory.ini
-
-      - name: Install Ansible
-        run: |
-          sudo apt update
-          sudo apt install -y ansible
 
       - name: Run Ansible playbook
         run: |
           ansible-playbook -i inventory.ini playbook.yml
 
-
+      - name: Cleanup on failure
+        if: failure()
+        working-directory: terraform
+        run: |
+          echo "⚠️ Error detectado. Borrando recursos para no dejar basura en AWS..."
+          terraform destroy -auto-approve || true
