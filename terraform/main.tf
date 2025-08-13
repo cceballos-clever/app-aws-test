@@ -136,7 +136,7 @@ resource "aws_instance" "app_server" {
   instance_type = "t3.micro"
   subnet_id     = aws_subnet.public_1.id
   security_groups = [aws_security_group.alb_sg.id]
-  key_name      = "my-key.pem"
+  key_name      = var.my-key
 
   tags = { Name = "AppServer" }
 }
