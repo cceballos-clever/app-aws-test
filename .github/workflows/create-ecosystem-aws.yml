@@ -16,6 +16,7 @@ jobs:
       DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
       EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
       EC2_KEY_NAME: ${{ secrets.EC2_KEY_NAME }}
+      TF_VAR_key_name: ${{ secrets.EC2_KEY_NAME }}
 
     steps:
       - name: Checkout repo
