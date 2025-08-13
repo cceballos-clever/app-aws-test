@@ -107,6 +107,7 @@ jobs:
           cat inventory.ini
 
       - name: Run Ansible playbook
+        working-directory: ansible
         run: ansible-playbook -i inventory.ini playbook.yml
 
       - name: Setup Terraform
