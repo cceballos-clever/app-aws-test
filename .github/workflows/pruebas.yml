@@ -1,4 +1,6 @@
 name: ver ruta de archivos
+
+on:
   workflow_dispatch:
 
 jobs:
