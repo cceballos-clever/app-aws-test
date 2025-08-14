@@ -44,7 +44,7 @@ jobs:
           packer build \
             -var "key_name=$KEY_NAME" \
             -var "private_key_path=$PRIVATE_KEY_PATH" \
-            -var "subnet_id=subnet-04c64c69b982c9bb3" \
+            -var "subnet_id=$SUBNET_ID" \
             ami.pkr.hcl
 
       - name: Get AMI ID
