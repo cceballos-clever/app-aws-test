@@ -1,3 +1,4 @@
+# Plugin requerido
 packer {
   required_plugins {
     amazon = {
@@ -7,14 +8,29 @@ packer {
   }
 }
 
-variable "key_name" {}
-variable "private_key_path" {}
-variable "subnet_id" {}
-variable "security_group_id" {}
+# Variables
+variable "key_name" {
+  type = string
+}
+
+variable "private_key_path" {
+  type = string
+}
+
+variable "subnet_id" {
+  type = string
+}
+
 variable "region" {
+  type    = string
   default = "us-east-1"
 }
 
+variable "security_group_id" {
+  type = string
+}
+
+# Source
 source "amazon-ebs" "example" {
   region                 = var.region
   subnet_id              = var.subnet_id
@@ -40,11 +56,14 @@ source "amazon-ebs" "example" {
   ssh_timeout                 = "10m"
 }
 
+# Provisioner: usa Ansible desde el runner
 build {
   sources = ["source.amazon-ebs.example"]
 
-  provisioner "ansible-local" {
-    playbook_file = "../ansible/playbook.yml" # Tu playbook dentro del repo
+  provisioner "ansible" {
+    playbook_file    = "../ansible/playbook.yml" # playbook dentro del repo
+    user             = "ubuntu"
+    private_key_file = var.private_key_path
   }
 
   post-processor "manifest" {
