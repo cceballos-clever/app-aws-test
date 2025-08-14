@@ -41,7 +41,7 @@ jobs:
       - name: Create Ansible inventory
         run: |
           echo "[ec2]" > inventory.ini
-          echo "${{ env.EC2_PUBLIC_IP }} ansible_ssh_private_key_file=~/.ssh/my-key.pem ansible_user=ubuntu" >> inventory.ini
+          echo "${{ env.EC2_PUBLIC_IP }} ansible_ssh_private_key_file=~/.ssh/my-key.pem ansible_user=ec2-user" >> inventory.ini
           cat inventory.ini
 
       - name: Test Ansible connectivity
