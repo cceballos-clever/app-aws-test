@@ -40,9 +40,9 @@ jobs:
         working-directory: packer
         run: |
           packer build \
-          -var "subnet_id=subnet-04c64c69b982c9bb3" \
-          -var "key_name=mi-keypair-en-aws" \
+          -var "key_name=$KEY_NAME" \
           -var "private_key_path=/home/runner/.ssh/my-key.pem" \
+          -var "subnet_id=subnet-04c64c69b982c9bb3" \
           ami.pkr.hcl
 
 
