@@ -10,6 +10,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+      PACKER_GITHUB_API_TOKEN: ${{ secrets.PACKER_GITHUB_API_TOKEN }}
 
     steps:
       - name: Checkout repository
@@ -31,6 +32,7 @@ jobs:
             --query "KeyMaterial" --output text > ~/.ssh/temp-key.pem
           chmod 400 ~/.ssh/temp-key.pem
           echo "KEY_NAME=temp-gha-key" >> $GITHUB_ENV
+          echo "PRIVATE_KEY_PATH=/home/runner/.ssh/temp-key.pem" >> $GITHUB_ENV
 
       - name: Packer Init
         working-directory: packer
@@ -39,9 +41,11 @@ jobs:
       - name: Build AMI
         working-directory: packer
         run: |
-          packer build -var "key_name=$KEY_NAME" \
-                       -var "private_key_path=~/.ssh/temp-key.pem" \
-                       ami.pkr.hcl
+          packer build \
+            -var "key_name=$KEY_NAME" \
+            -var "private_key_path=$PRIVATE_KEY_PATH" \
+            -var "subnet_id=subnet-04c64c69b982c9bb3" \
+            ami.pkr.hcl
 
       - name: Get instance & AMI IDs
         id: ids
@@ -67,7 +71,7 @@ jobs:
       - name: Create Ansible inventory
         run: |
           echo "[ec2]" > inventory.ini
-          echo "${{ env.PUBLIC_IP }} ansible_ssh_private_key_file=~/.ssh/temp-key.pem ansible_user=ubuntu" >> inventory.ini
+          echo "${{ env.PUBLIC_IP }} ansible_ssh_private_key_file=$PRIVATE_KEY_PATH ansible_user=ubuntu" >> inventory.ini
           cat inventory.ini
 
       - name: Test Ansible connectivity
