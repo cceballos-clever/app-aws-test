@@ -78,7 +78,15 @@ jobs:
       - name: Test Ansible connectivity
         run: ansible -i inventory.ini -m ping all
 
-      - name: List files for debugging
+      - name: Terminate EC2 instance
+        if: always()
         run: |
-          pwd
-          ls -R
+          aws ec2 terminate-instances --instance-ids $INSTANCE_ID
+          aws ec2 wait instance-terminated --instance-ids $INSTANCE_ID
+
+      - name: Deregister AMI
+        if: always()
+        run: |
+          SNAPSHOT_ID=$(aws ec2 describe-images --image-ids $AMI_ID --query "Images[0].BlockDeviceMappings[0].Ebs.SnapshotId" --output text)
+          aws ec2 deregister-image --image-id $AMI_ID
+          aws ec2 delete-snapshot --snapshot-id $SNAPSHOT_ID
