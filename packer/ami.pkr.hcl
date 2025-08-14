@@ -34,11 +34,9 @@ variable "security_group_id" {
   type = string
 }
 
-# Source
 source "amazon-ebs" "example" {
   region                 = var.region
   subnet_id              = var.subnet_id
-  vpc_security_group_ids = [var.security_group_id]
   ssh_username           = "ubuntu"
   ssh_keypair_name       = var.key_name
   ssh_private_key_file   = var.private_key_path
