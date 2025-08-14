@@ -49,29 +49,24 @@ jobs:
             -var "key_name=$KEY_NAME" \
             -var "private_key_path=$PRIVATE_KEY_PATH" \
             -var "subnet_id=$SUBNET_ID" \
-            -var "region=$REGION" \
             ami.pkr.hcl
 
-      - name: Get AMI ID
-        id: ami
+      - name: Get AMI ID and temporary instance public IP
+        id: get_ami_ip
         run: |
           AMI_ID=$(jq -r '.builds[0].artifact_id' packer/manifest.json | cut -d':' -f2)
+          # Obtener la IP de la instancia temporal que creó Packer
+          PUBLIC_IP=$(aws ec2 describe-instances \
+            --filters "Name=image-id,Values=$AMI_ID" \
+            --query "Reservations[0].Instances[0].PublicIpAddress" \
+            --output text)
           echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
+          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
 
       - name: Setup Ansible
         run: |
           sudo apt update
           sudo apt install -y ansible sshpass
-
-      - name: Get EC2 public IP
-        id: get_ip
-        run: |
-          INSTANCE_ID=$(jq -r '.builds[0].custom_data.instance_id' packer/manifest.json)
-          PUBLIC_IP=$(aws ec2 describe-instances \
-            --instance-ids $INSTANCE_ID \
-            --query "Reservations[0].Instances[0].PublicIpAddress" \
-            --output text)
-          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
 
       - name: Add EC2 to known hosts
         run: ssh-keyscan -H ${{ env.PUBLIC_IP }} >> ~/.ssh/known_hosts
@@ -92,8 +87,5 @@ jobs:
           SNAPSHOT_ID=$(aws ec2 describe-images --image-ids $AMI_ID --query "Images[0].BlockDeviceMappings[0].Ebs.SnapshotId" --output text)
           aws ec2 deregister-image --image-id $AMI_ID
           aws ec2 delete-snapshot --snapshot-id $SNAPSHOT_ID
-          # Terminar instancia
-          aws ec2 terminate-instances --instance-ids $INSTANCE_ID
-          aws ec2 wait instance-terminated --instance-ids $INSTANCE_ID
           # Eliminar key pair temporal
           aws ec2 delete-key-pair --key-name $KEY_NAME
