@@ -1,8 +1,12 @@
-# Plugin requerido
+# Plugins requeridos
 packer {
   required_plugins {
     amazon = {
       source  = "github.com/hashicorp/amazon"
+      version = ">= 1.0.0"
+    }
+    ansible = {
+      source  = "github.com/hashicorp/ansible"
       version = ">= 1.0.0"
     }
   }
@@ -56,14 +60,14 @@ source "amazon-ebs" "example" {
   ssh_timeout                 = "10m"
 }
 
-# Provisioner: usa Ansible desde el runner
+# Provisioner: usa Ansible dentro de la instancia temporal
 build {
   sources = ["source.amazon-ebs.example"]
 
-  provisioner "ansible" {
-    playbook_file    = "../ansible/playbook.yml" # playbook dentro del repo
-    user             = "ubuntu"
-    private_key_file = var.private_key_path
+  provisioner "ansible-local" {
+    playbook_file = "../ansible/playbook.yml" # Ruta relativa desde packer/
+    user          = "ubuntu"
+    extra_arguments = ["--ssh-extra-args='-o StrictHostKeyChecking=no'"]
   }
 
   post-processor "manifest" {
