@@ -11,7 +11,9 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
       PACKER_GITHUB_API_TOKEN: ${{ secrets.PACKER_GITHUB_API_TOKEN }}
-      SUBNET_ID: "subnet-04c64c69b982c9bb3"  #subnet publica
+      SUBNET_ID: "subnet-096db494d1b21d5b1"           # Reemplazar por tu Subnet pública
+      SECURITY_GROUP_ID: "sg-0d25e52a9054cf0c7"      # Reemplazar por tu Security Group
+      REGION: "us-east-1"                 # Opcional si usas otra región
 
     steps:
       - name: Checkout repository
@@ -29,7 +31,6 @@ jobs:
 
       - name: Generate temporary key pair
         run: |
-          # Eliminar key anterior si existe
           aws ec2 delete-key-pair --key-name temp-gha-key || true
           aws ec2 create-key-pair --key-name temp-gha-key \
             --query "KeyMaterial" --output text > ~/.ssh/temp-key.pem
@@ -48,39 +49,33 @@ jobs:
             -var "key_name=$KEY_NAME" \
             -var "private_key_path=$PRIVATE_KEY_PATH" \
             -var "subnet_id=$SUBNET_ID" \
+            -var "security_group_id=$SECURITY_GROUP_ID" \
+            -var "region=$REGION" \
             ami.pkr.hcl
 
-      - name: Get AMI & Instance IDs
-        id: get_ids
+      - name: Get AMI ID
+        id: ami
         run: |
           AMI_ID=$(jq -r '.builds[0].artifact_id' packer/manifest.json | cut -d':' -f2)
-          INSTANCE_ID=$(jq -r '.builds[0].custom_data.instance_id' packer/manifest.json)
           echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
-          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
-
-      - name: Wait for SSH
-        run: |
-          for i in {1..20}; do
-            nc -zv $(aws ec2 describe-instances --instance-ids $INSTANCE_ID \
-                --query "Reservations[0].Instances[0].PublicIpAddress" --output text) 22 && break
-            echo "Waiting for SSH..."
-            sleep 15
-          done
-
-      - name: Get EC2 public IP
-        id: get_ip
-        run: |
-          PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID \
-            --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
-          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
 
       - name: Setup Ansible
         run: |
           sudo apt update
           sudo apt install -y ansible sshpass
 
+      - name: Get EC2 public IP
+        id: get_ip
+        run: |
+          INSTANCE_ID=$(jq -r '.builds[0].custom_data.instance_id' packer/manifest.json)
+          PUBLIC_IP=$(aws ec2 describe-instances \
+            --instance-ids $INSTANCE_ID \
+            --query "Reservations[0].Instances[0].PublicIpAddress" \
+            --output text)
+          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+
       - name: Add EC2 to known hosts
-        run: ssh-keyscan -H ${{ env.PUBLIC_IP }} >> ~/.ssh/known_hosts || true
+        run: ssh-keyscan -H ${{ env.PUBLIC_IP }} >> ~/.ssh/known_hosts
 
       - name: Create Ansible inventory
         run: |
@@ -95,8 +90,7 @@ jobs:
         if: always()
         run: |
           # Deregistrar AMI y eliminar snapshot
-          SNAPSHOT_ID=$(aws ec2 describe-images --image-ids $AMI_ID \
-            --query "Images[0].BlockDeviceMappings[0].Ebs.SnapshotId" --output text)
+          SNAPSHOT_ID=$(aws ec2 describe-images --image-ids $AMI_ID --query "Images[0].BlockDeviceMappings[0].Ebs.SnapshotId" --output text)
           aws ec2 deregister-image --image-id $AMI_ID
           aws ec2 delete-snapshot --snapshot-id $SNAPSHOT_ID
           # Terminar instancia
