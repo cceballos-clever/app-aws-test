@@ -85,6 +85,14 @@ jobs:
           sudo apt update
           sudo apt install -y ansible sshpass
 
+      - name: esperar un cachito a que este atr el demonio
+        run: |
+          for i in {1..20}; do
+            nc -zv ${{ env.PUBLIC_IP }} 22 && break
+            echo "Waiting for SSH..."
+            sleep 10
+          done
+      
       - name: Add EC2 to known hosts
         run: ssh-keyscan -H ${{ env.PUBLIC_IP }} >> ~/.ssh/known_hosts
 
