@@ -29,16 +29,8 @@ variable "security_group_id" {
   type = string
 }
 
-# Source
 source "amazon-ebs" "example" {
-  region                 = var.region
-  subnet_id              = var.subnet_id
-  ssh_username           = "ubuntu"
-  ssh_keypair_name       = var.key_name
-  ssh_private_key_file   = var.private_key_path
-  ami_name               = "packer-test-aws-{{timestamp}}"
-  instance_type          = "t3.micro"
-  associate_public_ip_address = true
+  region = var.region
 
   source_ami_filter {
     filters = {
@@ -49,9 +41,20 @@ source "amazon-ebs" "example" {
     owners      = ["099720109477"]
     most_recent = true
   }
+
+  instance_type           = "t3.micro"
+  subnet_id               = var.subnet_id
+  vpc_security_group_ids  = [var.security_group_id]
+  ssh_username            = "ubuntu"
+  ssh_keypair_name        = var.key_name
+  ssh_private_key_file    = var.private_key_path
+  ami_name                = "packer-test-aws-{{timestamp}}"
+
+  associate_public_ip_address = true
+  ssh_interface               = "public_ip"
+  ssh_timeout                 = "10m"
 }
 
-# Build
 build {
   sources = ["source.amazon-ebs.example"]
 
