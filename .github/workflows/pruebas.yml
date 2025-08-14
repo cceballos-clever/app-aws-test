@@ -53,6 +53,7 @@ jobs:
             -var "key_name=$KEY_NAME" \
             -var "private_key_path=$PRIVATE_KEY_PATH" \
             -var "subnet_id=$SUBNET_ID" \
+            -var "security_group_id=$SECURITY_GROUP_ID" \
             ami.pkr.hcl
 
       - name: Get AMI ID & temporary instance public IP
