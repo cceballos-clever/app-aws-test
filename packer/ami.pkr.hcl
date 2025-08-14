@@ -1,12 +1,7 @@
-# Plugin requerido
 packer {
   required_plugins {
     amazon = {
       source  = "github.com/hashicorp/amazon"
-      version = ">= 1.0.0"
-     }
-    ansible = {
-      source  = "github.com/hashicorp/ansible"
       version = ">= 1.0.0"
     }
   }
@@ -42,7 +37,8 @@ source "amazon-ebs" "example" {
   ssh_keypair_name       = var.key_name
   ssh_private_key_file   = var.private_key_path
   ami_name               = "packer-test-aws-{{timestamp}}"
-  #vpc_security_group_ids = [var.security_group_id]
+  instance_type          = "t3.micro"
+  associate_public_ip_address = true
 
   source_ami_filter {
     filters = {
@@ -53,20 +49,11 @@ source "amazon-ebs" "example" {
     owners      = ["099720109477"]
     most_recent = true
   }
-
-  instance_type               = "t3.micro"
-  associate_public_ip_address = true
-  ssh_interface               = "public_ip"
-  ssh_timeout                 = "10m"
 }
 
-# Provisioner Ansible-Local
+# Build
 build {
   sources = ["source.amazon-ebs.example"]
-
-  provisioner "ansible-local" {
-    playbook_file = "../ansible/playbook.yml" # tu playbook dentro del repo
-  }
 
   post-processor "manifest" {
     output = "manifest.json"
