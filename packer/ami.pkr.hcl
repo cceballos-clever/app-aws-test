@@ -1,4 +1,3 @@
-# Plugin requerido
 packer {
   required_plugins {
     amazon = {
@@ -8,13 +7,16 @@ packer {
   }
 }
 
-# Variables
 variable "region" {
   type    = string
   default = "us-east-1"
 }
 
 variable "subnet_id" {
+  type = string
+}
+
+variable "security_group_id" {
   type = string
 }
 
@@ -26,7 +28,6 @@ variable "private_key_path" {
   type = string
 }
 
-# Source
 source "amazon-ebs" "example" {
   region                 = var.region
   subnet_id              = var.subnet_id
@@ -34,6 +35,11 @@ source "amazon-ebs" "example" {
   ssh_keypair_name       = var.key_name
   ssh_private_key_file   = var.private_key_path
   ami_name               = "packer-test-aws-{{timestamp}}"
+
+  instance_type          = "t3.micro"
+  associate_public_ip_address = true
+  ssh_interface               = "public_ip"
+  ssh_timeout                 = "10m"
 
   source_ami_filter {
     filters = {
@@ -45,13 +51,9 @@ source "amazon-ebs" "example" {
     most_recent = true
   }
 
-  instance_type               = "t3.micro"
-  associate_public_ip_address = true  # clave para subnet pública
-  ssh_interface               = "public_ip"
-  ssh_timeout                 = "10m"
+  vpc_security_group_ids = [var.security_group_id]
 }
 
-# Build
 build {
   sources = ["source.amazon-ebs.example"]
 
