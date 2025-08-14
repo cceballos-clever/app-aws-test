@@ -47,10 +47,6 @@ jobs:
         run: |
           packer build ami.pkr.hcl
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.8.0"
 
       - name: Get AMI ID
         id: ami
