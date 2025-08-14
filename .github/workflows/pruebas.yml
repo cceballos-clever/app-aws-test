@@ -56,18 +56,31 @@ jobs:
             -var "security_group_id=$SECURITY_GROUP_ID" \
             ami.pkr.hcl
 
-      - name: Get AMI ID & temporary instance public IP
-        id: get_ami_ip
+      - name: Launch instance from AMI
+        id: launch_instance
         run: |
           AMI_ID=$(jq -r '.builds[0].artifact_id' packer/manifest.json | cut -d':' -f2)
-          PUBLIC_IP=$(aws ec2 describe-instances \
-            --filters "Name=image-id,Values=$AMI_ID" \
-            --query "Reservations[0].Instances[0].PublicIpAddress" \
+          INSTANCE_ID=$(aws ec2 run-instances \
+            --image-id $AMI_ID \
+            --count 1 \
+            --instance-type t3.micro \
+            --key-name $KEY_NAME \
+            --subnet-id $SUBNET_ID \
+            --security-group-ids $SECURITY_GROUP_ID \
+            --associate-public-ip-address \
+            --query "Instances[0].InstanceId" \
             --output text)
           echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
-          echo "AMI_ID=$AMI_ID"
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+          
+          echo "Esperando a que la instancia esté en 'running'..."
+          aws ec2 wait instance-running --instance-ids $INSTANCE_ID
+          
+          PUBLIC_IP=$(aws ec2 describe-instances \
+            --instance-ids $INSTANCE_ID \
+            --query "Reservations[0].Instances[0].PublicIpAddress" \
+            --output text)
           echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
-          echo "PUBLIC_IP=$PUBLIC_IP"
 
       - name: Add EC2 to known hosts
         run: ssh-keyscan -H ${{ env.PUBLIC_IP }} >> ~/.ssh/known_hosts
@@ -75,15 +88,17 @@ jobs:
       - name: Create Ansible inventory
         run: |
           echo "[ec2]" > inventory.ini
-          echo "${{ env.PUBLIC_IP }} ansible_user=ubuntu ansible_ssh_private_key_file=$PRIVATE_KEY_PATH" >> inventory.ini
+          echo "${{ env.PUBLIC_IP }} ansible_user=ubuntu ansible_ssh_private_key_file=${{ env.PRIVATE_KEY_PATH }}" >> inventory.ini
           cat inventory.ini
 
       - name: Run Ansible Playbook
-        run: ansible -i inventory.ini ../ansible/playbook.yml
+        run: ansible-playbook -i inventory.ini ansible/playbook.yml
 
       - name: Cleanup
         if: always()
         run: |
+          aws ec2 terminate-instances --instance-ids $INSTANCE_ID
+          aws ec2 wait instance-terminated --instance-ids $INSTANCE_ID
           SNAPSHOT_ID=$(aws ec2 describe-images --image-ids $AMI_ID --query "Images[0].BlockDeviceMappings[0].Ebs.SnapshotId" --output text)
           aws ec2 deregister-image --image-id $AMI_ID
           aws ec2 delete-snapshot --snapshot-id $SNAPSHOT_ID
