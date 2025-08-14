@@ -3,7 +3,7 @@ packer {
     amazon = {
       source  = "github.com/hashicorp/amazon"
       version = ">= 1.0.0"
-     }
+    }
     ansible = {
       source  = "github.com/hashicorp/ansible"
       version = ">= 1.0.0"
@@ -29,20 +29,14 @@ variable "region" {
   default = "us-east-1"
 }
 
-variable "security_group_id" {
-  type = string
-}
-
 # Source
 source "amazon-ebs" "example" {
-  region                 = var.region
-  subnet_id              = var.subnet_id
-  ssh_username           = "ubuntu"
-  ssh_keypair_name       = var.key_name
-  ssh_private_key_file   = var.private_key_path
-  ami_name               = "packer-test-aws-{{timestamp}}"
-  #vpc_security_group_id = var.security_group_id
-
+  region               = var.region
+  subnet_id            = var.subnet_id
+  ssh_username         = "ubuntu"
+  ssh_keypair_name     = var.key_name
+  ssh_private_key_file = var.private_key_path
+  ami_name             = "packer-test-aws-{{timestamp}}"
 
   source_ami_filter {
     filters = {
@@ -60,14 +54,24 @@ source "amazon-ebs" "example" {
   ssh_timeout                 = "10m"
 }
 
-# Provisioner Ansible-Local
+# Build
 build {
   sources = ["source.amazon-ebs.example"]
 
+  # 1️⃣ Instalar Ansible en la instancia temporal
+  provisioner "shell" {
+    inline = [
+      "sudo apt update",
+      "sudo apt install -y ansible"
+    ]
+  }
+
+  # 2️⃣ Ejecutar playbook para instalar Nginx
   provisioner "ansible-local" {
     playbook_file = "../ansible/playbook.yml" # tu playbook dentro del repo
   }
 
+  # 3️⃣ Generar manifest con la info de la build
   post-processor "manifest" {
     output = "manifest.json"
   }
