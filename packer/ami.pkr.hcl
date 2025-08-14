@@ -16,10 +16,6 @@ variable "subnet_id" {
   type = string
 }
 
-variable "security_group_id" {
-  type = string
-}
-
 variable "key_name" {
   type = string
 }
@@ -50,8 +46,6 @@ source "amazon-ebs" "example" {
     owners      = ["099720109477"]
     most_recent = true
   }
-
-  vpc_security_group_ids = [var.security_group_id]
 }
 
 build {
