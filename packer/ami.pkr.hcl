@@ -1,20 +1,4 @@
-variable "key_name" {
-  type = string
-}
-
-variable "private_key_path" {
-  type = string
-}
-
-variable "subnet_id" {
-  type = string
-}
-
-variable "region" {
-  type    = string
-  default = "us-east-1"
-}
-
+# Plugin requerido
 packer {
   required_plugins {
     amazon = {
@@ -24,6 +8,25 @@ packer {
   }
 }
 
+# Variables
+variable "region" {
+  type    = string
+  default = "us-east-1"
+}
+
+variable "subnet_id" {
+  type = string
+}
+
+variable "key_name" {
+  type = string
+}
+
+variable "private_key_path" {
+  type = string
+}
+
+# Source
 source "amazon-ebs" "example" {
   region                 = var.region
   subnet_id              = var.subnet_id
@@ -42,12 +45,13 @@ source "amazon-ebs" "example" {
     most_recent = true
   }
 
-  instance_type              = "t3.micro"
-  associate_public_ip_address = true
+  instance_type               = "t3.micro"
+  associate_public_ip_address = true  # clave para subnet pública
   ssh_interface               = "public_ip"
   ssh_timeout                 = "10m"
 }
 
+# Build
 build {
   sources = ["source.amazon-ebs.example"]
 
