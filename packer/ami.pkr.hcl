@@ -22,7 +22,7 @@ source "amazon-ebs" "example" {
   subnet_id       = "subnet-04c64c69b982c9bb3"
   ssh_username    = "ubuntu"
   ssh_keypair_name  = "key_name"
-  ssh_private_key_file       = pathexpand("~/.ssh/my-key.pem")
+  ssh_private_key_file       = "~/.ssh/my-key.pem"
   ami_name        = "packer-test-aws-{{timestamp}}"
 
   # Configuraciones añadidas
