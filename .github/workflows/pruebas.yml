@@ -29,7 +29,6 @@ jobs:
 
       - name: Generate temporary key pair
         run: |
-          # Si ya existe, eliminarla para no fallar
           aws ec2 delete-key-pair --key-name temp-gha-key || true
           aws ec2 create-key-pair --key-name temp-gha-key \
             --query "KeyMaterial" --output text > ~/.ssh/temp-key.pem
@@ -50,16 +49,30 @@ jobs:
             -var "subnet_id=$SUBNET_ID" \
             ami.pkr.hcl
 
-      - name: Get AMI ID & Instance ID
-        id: get_ids
+      - name: Get AMI ID
+        id: get_ami
         run: |
           AMI_ID=$(jq -r '.builds[0].artifact_id' packer/manifest.json | cut -d':' -f2)
-          INSTANCE_ID=$(jq -r '.builds[0].custom_data.instance_id' packer/manifest.json)
           echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
+          echo "AMI_ID=$AMI_ID"
+
+      - name: Launch temporary EC2 from AMI
+        id: launch
+        run: |
+          INSTANCE_ID=$(aws ec2 run-instances \
+            --image-id $AMI_ID \
+            --instance-type t3.micro \
+            --key-name $KEY_NAME \
+            --subnet-id $SUBNET_ID \
+            --associate-public-ip-address \
+            --query 'Instances[0].InstanceId' \
+            --output text)
           echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
 
+      - name: Wait for instance to be running
+        run: aws ec2 wait instance-running --instance-ids $INSTANCE_ID
+
       - name: Get EC2 public IP
-        id: get_ip
         run: |
           PUBLIC_IP=$(aws ec2 describe-instances \
             --instance-ids $INSTANCE_ID \
