@@ -7,8 +7,31 @@ packer {
   }
 }
 
+# Variables
+variable "key_name" {
+  type = string
+}
+
+variable "private_key_path" {
+  type = string
+}
+
+variable "subnet_id" {
+  type = string
+}
+
+variable "region" {
+  type    = string
+  default = "us-east-1"
+}
+
+variable "security_group_id" {
+  type = string
+}
+
 source "amazon-ebs" "example" {
-  region           = "us-east-1"
+  region = var.region
+
   source_ami_filter {
     filters = {
       virtualization-type = "hvm"
@@ -18,14 +41,15 @@ source "amazon-ebs" "example" {
     owners      = ["099720109477"]
     most_recent = true
   }
-  instance_type   = "t3.micro"
-  subnet_id       = "subnet-04c64c69b982c9bb3"
-  ssh_username    = "ubuntu"
-  ssh_keypair_name  = "key_name"
-  ssh_private_key_file       = "~/.ssh/my-key.pem"
-  ami_name        = "packer-test-aws-{{timestamp}}"
 
-  # Configuraciones añadidas
+  instance_type           = "t3.micro"
+  subnet_id               = var.subnet_id
+  vpc_security_group_ids  = [var.security_group_id]
+  ssh_username            = "ubuntu"
+  ssh_keypair_name        = var.key_name
+  ssh_private_key_file    = var.private_key_path
+  ami_name                = "packer-test-aws-{{timestamp}}"
+
   associate_public_ip_address = true
   ssh_interface               = "public_ip"
   ssh_timeout                 = "10m"
