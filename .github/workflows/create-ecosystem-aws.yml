@@ -54,7 +54,6 @@ jobs:
             -var "key_name=$KEY_NAME" \
             -var "private_key_path=$PRIVATE_KEY_PATH" \
             -var "subnet_id=$SUBNET_ID" \
-            -var "security_group_id=$SECURITY_GROUP_ID" \
             ami.pkr.hcl
 
       - name: Get AMI ID
@@ -116,9 +115,13 @@ jobs:
       - name: Cleanup
         if: failure() || cancelled()
         run: |
-          aws ec2 terminate-instances --instance-ids $INSTANCE_ID
-          aws ec2 wait instance-terminated --instance-ids $INSTANCE_ID
-          SNAPSHOT_ID=$(aws ec2 describe-images --image-ids $AMI_ID --query "Images[0].BlockDeviceMappings[0].Ebs.SnapshotId" --output text)
-          aws ec2 deregister-image --image-id $AMI_ID
-          aws ec2 delete-snapshot --snapshot-id $SNAPSHOT_ID
+          if [ -n "$INSTANCE_ID" ]; then
+            aws ec2 terminate-instances --instance-ids $INSTANCE_ID
+            aws ec2 wait instance-terminated --instance-ids $INSTANCE_ID
+          fi
+          if [ -n "$AMI_ID" ]; then
+            SNAPSHOT_ID=$(aws ec2 describe-images --image-ids $AMI_ID --query "Images[0].BlockDeviceMappings[0].Ebs.SnapshotId" --output text)
+            aws ec2 deregister-image --image-id $AMI_ID
+            aws ec2 delete-snapshot --snapshot-id $SNAPSHOT_ID
+          fi
           aws ec2 delete-key-pair --key-name $KEY_NAME
