@@ -29,9 +29,9 @@ variable "region" {
   default = "us-east-1"
 }
 
-#variable "security_group_id" {
- # type = string
-#}
+variable "security_group_id" {
+  type = string
+}
 
 # Source
 source "amazon-ebs" "example" {
