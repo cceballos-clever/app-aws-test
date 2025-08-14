@@ -29,9 +29,9 @@ variable "region" {
   default = "us-east-1"
 }
 
-variable "security_group_id" {
-  type = string
-}
+#variable "security_group_id" {
+ # type = string
+#}
 
 # Source
 source "amazon-ebs" "example" {
@@ -41,7 +41,7 @@ source "amazon-ebs" "example" {
   ssh_keypair_name       = var.key_name
   ssh_private_key_file   = var.private_key_path
   ami_name               = "packer-test-aws-{{timestamp}}"
-  vpc_security_group_id = var.security_group_id
+  #vpc_security_group_id = var.security_group_id
 
 
   source_ami_filter {
