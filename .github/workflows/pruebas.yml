@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-ami:
+  debug:
     runs-on: ubuntu-latest
 
     env:
@@ -11,9 +11,8 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
       PACKER_GITHUB_API_TOKEN: ${{ secrets.PACKER_GITHUB_API_TOKEN }}
-      SUBNET_ID: "subnet-096db494d1b21d5b1"           # Subnet pública
-      SECURITY_GROUP_ID: "sg-0d25e52a9054cf0c7"      # Security Group
-      REGION: "us-east-1"
+      SUBNET_ID: "subnet-096db494d1b21d5b1"       # Reemplazar por tu Subnet pública
+      SECURITY_GROUP_ID: "sg-0d25e52a9054cf0c7"   # Reemplazar por tu Security Group
 
     steps:
       - name: Checkout repository
@@ -23,11 +22,6 @@ jobs:
         uses: hashicorp/setup-packer@v2
         with:
           version: "1.10.0"
-
-      - name: Setup Ansible
-        run: |
-          sudo apt update
-          sudo apt install -y ansible sshpass
 
       - name: Create SSH folder
         run: |
@@ -57,7 +51,7 @@ jobs:
             -var "security_group_id=$SECURITY_GROUP_ID" \
             ami.pkr.hcl
 
-      - name: Get AMI ID & Public IP
+      - name: Get AMI public IP
         id: get_ami_ip
         run: |
           AMI_ID=$(jq -r '.builds[0].artifact_id' packer/manifest.json | cut -d':' -f2)
@@ -67,6 +61,11 @@ jobs:
             --output text)
           echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
           echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+
+      - name: Setup Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible sshpass
 
       - name: Add EC2 to known hosts
         run: ssh-keyscan -H ${{ env.PUBLIC_IP }} >> ~/.ssh/known_hosts
