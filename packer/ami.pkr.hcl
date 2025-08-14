@@ -21,7 +21,7 @@ source "amazon-ebs" "example" {
   instance_type   = "t3.micro"
   subnet_id       = "subnet-04c64c69b982c9bb3"
   ssh_username    = "ubuntu"
-  ssh_keypair_name  = var.key_name
+  ssh_keypair_name  = "key_name"
   ssh_private_key_file       = pathexpand("~/.ssh/my-key.pem")
   ami_name        = "packer-test-aws-{{timestamp}}"
 
