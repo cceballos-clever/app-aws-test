@@ -7,35 +7,22 @@ packer {
   }
 }
 
+variable "key_name" {}
+variable "private_key_path" {}
+variable "subnet_id" {}
+variable "security_group_id" {}
 variable "region" {
-  type    = string
   default = "us-east-1"
-}
-
-variable "subnet_id" {
-  type = string
-}
-
-variable "key_name" {
-  type = string
-}
-
-variable "private_key_path" {
-  type = string
 }
 
 source "amazon-ebs" "example" {
   region                 = var.region
   subnet_id              = var.subnet_id
+  vpc_security_group_ids = [var.security_group_id]
   ssh_username           = "ubuntu"
   ssh_keypair_name       = var.key_name
   ssh_private_key_file   = var.private_key_path
   ami_name               = "packer-test-aws-{{timestamp}}"
-
-  instance_type          = "t3.micro"
-  associate_public_ip_address = true
-  ssh_interface               = "public_ip"
-  ssh_timeout                 = "10m"
 
   source_ami_filter {
     filters = {
@@ -46,10 +33,19 @@ source "amazon-ebs" "example" {
     owners      = ["099720109477"]
     most_recent = true
   }
+
+  instance_type              = "t3.micro"
+  associate_public_ip_address = true
+  ssh_interface               = "public_ip"
+  ssh_timeout                 = "10m"
 }
 
 build {
   sources = ["source.amazon-ebs.example"]
+
+  provisioner "ansible-local" {
+    playbook_file = "../ansible/playbook.yml" # Tu playbook dentro del repo
+  }
 
   post-processor "manifest" {
     output = "manifest.json"
