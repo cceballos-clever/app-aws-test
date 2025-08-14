@@ -1,3 +1,22 @@
+# Variables
+variable "key_name" {
+  type = string
+}
+
+variable "private_key_path" {
+  type = string
+}
+
+variable "subnet_id" {
+  type = string
+}
+
+variable "region" {
+  type    = string
+  default = "us-east-1"
+}
+
+# Plugin requerido
 packer {
   required_plugins {
     amazon = {
@@ -7,8 +26,15 @@ packer {
   }
 }
 
+# Source
 source "amazon-ebs" "example" {
-  region           = "us-east-1"
+  region           = var.region
+  subnet_id        = var.subnet_id
+  ssh_username     = "ubuntu"
+  ssh_keypair_name = var.key_name
+  ssh_private_key_file = var.private_key_path
+  ami_name         = "packer-test-aws-{{timestamp}}"
+
   source_ami_filter {
     filters = {
       virtualization-type = "hvm"
@@ -18,12 +44,8 @@ source "amazon-ebs" "example" {
     owners      = ["099720109477"]
     most_recent = true
   }
+
   instance_type   = "t3.micro"
-  subnet_id       = "subnet-04c64c69b982c9bb3"
-  ssh_username    = "ubuntu"
-  ssh_keypair_name  = "key_name"
-  ssh_private_key_file       = "~/.ssh/my-key.pem"
-  ami_name        = "packer-test-aws-{{timestamp}}"
 
   # Configuraciones añadidas
   associate_public_ip_address = true
@@ -31,6 +53,7 @@ source "amazon-ebs" "example" {
   ssh_timeout                 = "10m"
 }
 
+# Build
 build {
   sources = ["source.amazon-ebs.example"]
 
