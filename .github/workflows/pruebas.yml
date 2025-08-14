@@ -27,6 +27,16 @@ jobs:
         run: |
           packer init ami.pkr.hcl
 
+      - name: Create SSH folder
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+      - name: Write SSH key
+        run: |
+          echo "${{ env.EC2_SSH_KEY }}" > ~/.ssh/my-key.pem
+          chmod 400 ~/.ssh/my-key.pem
+
       - name: Build AMI
         working-directory: packer
         env:
@@ -55,15 +65,6 @@ jobs:
           sudo apt update
           sudo apt install -y ansible sshpass
 
-      - name: Create SSH folder
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-
-      - name: Write SSH key
-        run: |
-          echo "${{ env.EC2_SSH_KEY }}" > ~/.ssh/my-key.pem
-          chmod 400 ~/.ssh/my-key.pem
 
       - name: Add EC2 to known hosts
         run: |
