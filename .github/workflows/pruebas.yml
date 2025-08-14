@@ -11,7 +11,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
       PACKER_GITHUB_API_TOKEN: ${{ secrets.PACKER_GITHUB_API_TOKEN }}
-      SUBNET_ID: "subnet-publica-id"  # reemplazar por tu subnet pública
+      SUBNET_ID: "subnet-04c64c69b982c9bb3"  #subnet publica
 
     steps:
       - name: Checkout repository
