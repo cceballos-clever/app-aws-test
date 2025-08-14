@@ -11,6 +11,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
       PACKER_GITHUB_API_TOKEN: ${{ secrets.PACKER_GITHUB_API_TOKEN }}
+      SUBNET_ID: ${{ secrets.SUBNET_ID }}
 
     steps:
       - name: Checkout repository
@@ -21,17 +22,24 @@ jobs:
         with:
           version: "1.10.0"
 
+      - name: Setup Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible sshpass
+
       - name: Create SSH folder
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
       - name: Generate temporary key pair
+        id: create_key
         run: |
-          aws ec2 create-key-pair --key-name temp-gha-key \
+          UNIQUE_KEY="gha-temp-key-$(date +%s)"
+          aws ec2 create-key-pair --key-name $UNIQUE_KEY \
             --query "KeyMaterial" --output text > ~/.ssh/temp-key.pem
           chmod 400 ~/.ssh/temp-key.pem
-          echo "KEY_NAME=temp-gha-key" >> $GITHUB_ENV
+          echo "KEY_NAME=$UNIQUE_KEY" >> $GITHUB_ENV
           echo "PRIVATE_KEY_PATH=/home/runner/.ssh/temp-key.pem" >> $GITHUB_ENV
 
       - name: Packer Init
@@ -42,10 +50,11 @@ jobs:
         working-directory: packer
         run: |
           packer build \
-            -var "key_name=$KEY_NAME" \
-            -var "private_key_path=$PRIVATE_KEY_PATH" \
-            -var "subnet_id=subnet-04c64c69b982c9bb3" \
-            ami.pkr.hcl
+          -var "key_name=$KEY_NAME" \
+          -var "private_key_path=$PRIVATE_KEY_PATH" \
+          -var "subnet_id=$SUBNET_ID" \
+          -var "region=$AWS_DEFAULT_REGION" \
+          ami.pkr.hcl
 
       - name: Get instance & AMI IDs
         id: ids
@@ -59,11 +68,6 @@ jobs:
           echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
           echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
           echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
-
-      - name: Setup Ansible
-        run: |
-          sudo apt update
-          sudo apt install -y ansible sshpass
 
       - name: Add EC2 to known hosts
         run: ssh-keyscan -H ${{ env.PUBLIC_IP }} >> ~/.ssh/known_hosts
