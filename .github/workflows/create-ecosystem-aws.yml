@@ -110,7 +110,11 @@ jobs:
 
       - name: Terraform Apply
         working-directory: terraform
-        run: terraform apply -auto-approve
+        run: |
+            terraform apply -auto-approve \
+             -var "aaaccess_key=$AWS_ACCESS_KEY_ID" \
+             -var "secret_key=$AWS_SECRET_ACCESS_KEY" \
+             -var "region=$AWS_DEFAULT_REGION"
 
       - name: Cleanup
         if: failure() || cancelled()
