@@ -54,12 +54,12 @@ source "amazon-ebs" "example" {
   ssh_timeout                 = "10m"
 }
 
-# Provisioner Ansible-Local
+# Build with Ansible provisioner (runner-based)
 build {
   sources = ["source.amazon-ebs.example"]
 
-  provisioner "ansible-local" {
-    playbook_file = "../ansible/playbook.yml" # tu playbook dentro del repo
+  provisioner "ansible" {
+    playbook_file = "../ansible/playbook.yml"
   }
 
   post-processor "manifest" {
