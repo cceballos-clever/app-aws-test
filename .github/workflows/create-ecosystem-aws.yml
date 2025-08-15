@@ -111,11 +111,16 @@ jobs:
       - name: Terraform Apply
         working-directory: terraform
         run: |
-            terraform apply -auto-approve \
-             -var "access_key=$AWS_ACCESS_KEY_ID" \
-             -var "secret_key=$AWS_SECRET_ACCESS_KEY" \
-             -var "region=$AWS_DEFAULT_REGION" \
-             -var "ami_id=$AMI_ID"
+          terraform apply -auto-approve \
+            -var "access_key=$AWS_ACCESS_KEY_ID" \
+            -var "secret_key=$AWS_SECRET_ACCESS_KEY" \
+            -var "region=$AWS_DEFAULT_REGION" \
+            -var "ami_id=$AMI_ID" \
+            -var "db_username=${{ secrets.DB_USERNAME }}" \
+            -var "db_password=${{ secrets.DB_PASSWORD }}" \
+            -var "key_name=$KEY_NAME" \
+            -var "domain_name=${{ secrets.DOMAIN_NAME }}"
+
 
       - name: Cleanup
         if: failure() || cancelled()
