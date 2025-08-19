@@ -133,7 +133,8 @@ jobs:
 
 
       - name: Cleanup
-        if: failure() || cancelled()
+        #if: failure() || cancelled()
+        if: always()
         run: |
           if [ -n "$INSTANCE_ID" ]; then
             aws ec2 terminate-instances --instance-ids $INSTANCE_ID
