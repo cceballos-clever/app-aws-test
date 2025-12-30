@@ -1,216 +1,213 @@
-# ========================
-# Data source para AZs disponibles
-# ========================
-data "aws_availability_zones" "available" {}
+# ============================================================================
+# AWS WAFv2 Web ACL – main.tf
+# ============================================================================
 
 # ========================
-# 1. VPC y Subnets públicas
+# 0. Provider
 # ========================
-resource "aws_vpc" "main" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_support   = true
-  enable_dns_hostnames = true
-
-  tags = { Name = "main-vpc" }
-}
-
-resource "aws_subnet" "public_1" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.1.0/24"
-  availability_zone       = data.aws_availability_zones.available.names[0]
-  map_public_ip_on_launch = true
-
-  tags = { Name = "public-subnet-1" }
-}
-
-resource "aws_subnet" "public_2" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.2.0/24"
-  availability_zone       = data.aws_availability_zones.available.names[1]
-  map_public_ip_on_launch = true
-
-  tags = { Name = "public-subnet-2" }
+provider "aws" {
+  region = var.waf_region
 }
 
 # ========================
-# 2. Internet Gateway + Rutas
+# 1. Web ACL principal
 # ========================
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.main.id
-  tags   = { Name = "main-igw" }
-}
+resource "aws_wafv2_web_acl" "waf" {
+  name        = var.waf_name
+  description = var.waf_description
+  scope       = var.waf_scope
 
-resource "aws_route_table" "public_rt" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
-  }
-
-  tags = { Name = "public-route-table" }
-}
-
-resource "aws_route_table_association" "public_assoc" {
-  for_each      = {
-    subnet1 = aws_subnet.public_1.id
-    subnet2 = aws_subnet.public_2.id
-  }
-  subnet_id      = each.value
-  route_table_id = aws_route_table.public_rt.id
-}
-
-# ========================
-# 3. Security Group
-# ========================
-resource "aws_security_group" "alb_sg" {
-  name        = "alb-sg"
-  description = "Allow HTTP/HTTPS inbound"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-# ========================
-# 4. Load Balancer + Target Group
-# ========================
-resource "aws_lb" "app_lb" {
-  name               = "app-alb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = [aws_subnet.public_1.id, aws_subnet.public_2.id]
-}
-
-resource "aws_lb_target_group" "app_tg" {
-  name     = "app-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.main.id
-
-  health_check {
-    path                = "/"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    matcher             = "200"
-  }
-}
-
-resource "aws_lb_listener" "http_listener" {
-  load_balancer_arn = aws_lb.app_lb.arn
-  port              = 80
-  protocol          = "HTTP"
-
+  # Default action (permitir por ahora)
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.app_tg.arn
+    allow {}
+  }
+
+  # ========================
+  # 2. Known Bad Inputs
+  # ========================
+  rule {
+    name     = "AWSManagedRulesKnownBadInputsRuleSet"
+    priority = 0
+
+    override_action { none {} }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.waf_name}-known-bad-inputs"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # ========================
+  # 3. OWASP / Common Rule Set
+  # ========================
+  rule {
+    name     = "AWSManagedRulesCommonRuleSet"
+    priority = 2
+
+    override_action { none {} }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.waf_name}-common-rule-set"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # ========================
+  # 4. Geo Blocking
+  # ========================
+  rule {
+    name     = "GeoBlockingRule"
+    priority = 3
+
+    action {
+      block {}
+    }
+
+    statement {
+      geo_match_statement {
+        country_codes = ["RU"]
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.waf_name}-geo-blocking"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # ========================
+  # 5. PHP Protection
+  # ========================
+  rule {
+    name     = "AWSManagedRulesPHPRuleSet"
+    priority = 4
+
+    override_action { none {} }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesPHPRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.waf_name}-php-protection"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # ========================
+  # 6. Bot Control
+  # ========================
+  rule {
+    name     = "AWSManagedRulesBotControlRuleSet"
+    priority = 6
+
+    override_action { none {} }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesBotControlRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.waf_name}-bot-control"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # ========================
+  # 7. Visibility global
+  # ========================
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = var.waf_name
+    sampled_requests_enabled   = true
+  }
+
+  tags = var.tags
+}
+
+# ========================
+# 8. CloudWatch Log Group
+# ========================
+resource "aws_cloudwatch_log_group" "waf_logs" {
+  name = "aws-waf-logs-${var.log_group_name}"
+  tags = var.tags
+}
+
+# ========================
+# 9. Logging del WAF
+# ========================
+resource "aws_wafv2_web_acl_logging_configuration" "waf_logging" {
+  resource_arn            = aws_wafv2_web_acl.waf.arn
+  log_destination_configs = [aws_cloudwatch_log_group.waf_logs.arn]
+
+  redacted_fields {
+    single_header {
+      name = "authorization"
+    }
   }
 }
 
 # ========================
-# 5. EC2 en subnet pública
+# 10. Asociaciones
 # ========================
-resource "aws_instance" "app_server" {
-  ami           = var.ami_id
-  instance_type = "t3.micro"
-  subnet_id     = aws_subnet.public_1.id
-  security_groups = [aws_security_group.alb_sg.id]
-  key_name      = var.key_name
 
-  tags = { Name = "AppServer" }
+# ALB
+resource "aws_wafv2_web_acl_association" "alb" {
+  count        = var.alb_arn != "" ? 1 : 0
+  resource_arn = var.alb_arn
+  web_acl_arn  = aws_wafv2_web_acl.waf.arn
+}
+
+# API Gateway
+resource "aws_wafv2_web_acl_association" "api" {
+  count        = var.api_gateway_arn != "" ? 1 : 0
+  resource_arn = var.api_gateway_arn
+  web_acl_arn  = aws_wafv2_web_acl.waf.arn
+}
+
+# CloudFront
+resource "aws_wafv2_web_acl_association" "cloudfront" {
+  count        = var.cloudfront_distribution_arn != "" ? 1 : 0
+  resource_arn = var.cloudfront_distribution_arn
+  web_acl_arn  = aws_wafv2_web_acl.waf.arn
 }
 
 # ========================
-# 6. RDS PostgreSQL (usando subnets públicas aquí)
+# 11. Outputs
 # ========================
-resource "aws_db_subnet_group" "rds_subnet_group" {
-  name       = "rds-subnet-group"
-  subnet_ids = [aws_subnet.public_1.id, aws_subnet.public_2.id]
+output "waf_arn" {
+  value = aws_wafv2_web_acl.waf.arn
 }
 
-resource "aws_db_instance" "postgres" {
-  allocated_storage      = 20
-  engine                 = "postgres"
-  engine_version         = "16.9"
-  instance_class         = "db.t3.micro"
-  db_name                = "dbtestaws"
-  username               = var.db_username
-  password               = var.db_password
-  db_subnet_group_name   = aws_db_subnet_group.rds_subnet_group.name
-  skip_final_snapshot    = true
-  publicly_accessible    = false
-  vpc_security_group_ids = [aws_security_group.alb_sg.id]
+output "waf_name" {
+  value = aws_wafv2_web_acl.waf.name
 }
 
-# ========================
-# 7. Route53 + Alias al ALB
-# ========================
-resource "aws_route53_zone" "primary" {
-  name = var.domain_name
-}
-
-resource "aws_route53_record" "alias" {
-  zone_id = aws_route53_zone.primary.zone_id
-  name    = var.domain_name
-  type    = "A"
-
-  alias {
-    name                   = aws_lb.app_lb.dns_name
-    zone_id                = aws_lb.app_lb.zone_id
-    evaluate_target_health = true
-  }
-}
-
-# ========================
-# 8. EFS
-# ========================
-resource "aws_efs_file_system" "efs" {
-  creation_token = "my-efs"
-  encrypted      = true
-}
-
-resource "aws_efs_mount_target" "efs_mount" {
-  for_each       = {
-    subnet1 = aws_subnet.public_1.id
-    subnet2 = aws_subnet.public_2.id
-  }
-  file_system_id  = aws_efs_file_system.efs.id
-  subnet_id       = each.value
-  security_groups = [aws_security_group.alb_sg.id]
-}
-
-# ========================
-# 9. Outputs
-# ========================
-output "vpc_id" {
-  value = aws_vpc.main.id
-}
-
-output "public_subnet_ids" {
-  value = [aws_subnet.public_1.id, aws_subnet.public_2.id]
-}
-
-output "alb_dns_name" {
-  value = aws_lb.app_lb.dns_name
+output "waf_log_group" {
+  value = aws_cloudwatch_log_group.waf_logs.name
 }
